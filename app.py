@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from chatbot import handle_chat
 import db, llm
@@ -77,3 +80,14 @@ def health():
         "status": "ok" if llm_status == "ok" else "degraded",
         "llm": llm_status
     }
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logging.warning(f"Donnée corrompue/invalide reçue sur {request.url.path} : {exc.errors()}")
+    
+    sentry_sdk.capture_message(f"Corrupted Payload on {request.url.path}: {exc.errors()}", level="warning")
+    
+    return JSONResponse(
+        status_code=400,
+        content={"status": "error", "message": "Les données envoyées sont invalides ou corrompues."}
+    )

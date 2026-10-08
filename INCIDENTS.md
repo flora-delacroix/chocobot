@@ -18,3 +18,19 @@
 2. **Encapsulation défensive :** Capture de l'exception avec `sentry_sdk.capture_exception()`.
 3. **Mode dégradé (Fallback UX) :** Renvoi d'un message d'indisponibilité temporaire au client au lieu d'une erreur HTTP 500.
 4. **Monitoring actif :** Intégration du test de connexion Ollama sur l'endpoint `/health`.
+
+---
+
+## 3. Post-Mortem : Incident #02 — Reconstitution et gestion des données corrompues
+
+### Fiche de l'incident
+- **Sévérité :** Faible à Moyenne.
+- **Type d'erreur :** Payload JSON malformé / Invalidation de schéma Pydantic sur `/profile`.
+
+### Diagnostic & Cause Racine
+Envoi de requêtes HTTP POST contenant des types de données invalides ou des champs requis manquants. Faute de traitement spécifique des logs, ces erreurs de validation passaient silencieusement en HTTP 422 sans alerte de sécurité ou d'intégrité.
+
+### Résolution
+1. **Interception globale :** Ajout d'un `@app.exception_handler(RequestValidationError)` dans `app.py`.
+2. **Alerting Sentry :** Envoi systématique d'une alerte Sentry via `sentry_sdk.capture_message()` lors d'un rejet de payload.
+3. **Réponse normalisée :** Renvoi d'un code HTTP 400 explicite pour guider le client sans exposer la structure interne de la base de données.
