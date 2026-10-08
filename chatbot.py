@@ -1,7 +1,6 @@
 import json, os
-import db
-import llm
-import re
+import db, llm, re
+import logging, sentry_sdk
 
 with open(os.path.join(os.path.dirname(__file__), "data", "catalog.json"), encoding="utf-8") as f:
     CATALOG = json.load(f)
@@ -82,6 +81,29 @@ def get_predifined_response(message_client: str) -> str | None:
     return None
 
 
+def is_simple_query(message: str) -> bool:
+    """
+    Détermine si une requête est suffisamment simple pour le modèle léger (1B).
+    Si le message contient une demande de conseil, de produit ou de personnalisation, on renvoie False pour utiliser le grand modèle (3B).
+    """
+    msg = message.lower().strip()
+    words = msg.split()
+
+    complex_keywords = [
+        "conseil", "recommande", "suggère", "suggestion", "choisir", "offrir", "cadeau", "cherche",
+        "chocolat", "noir", "lait", "blanc", "praliné", "noisette", "noix", "coffret",
+        "composition", "ingrédient", "allergène", "sucre", "bio"
+    ]
+
+    if any(keyword in msg for keyword in complex_keywords):
+        return False
+
+    if len(words) > 8:
+        return False
+
+    return True
+
+
 def handle_chat(session_id, message):
     db.save_message(session_id, "user", message)
     customer = db.get_customer(session_id)
@@ -102,10 +124,14 @@ def handle_chat(session_id, message):
     system = SYSTEM_PROMPT + customer_context(customer)
     messages = [{"role": "system", "content": system}] + db.get_history(session_id)
 
+    selected_model = llm.SMALL_MODEL if is_simple_query(message) else llm.BIG_MODEL
+
     try:
-        reply, usage = llm.chat(llm.BIG_MODEL, messages, max_tokens=250)
-    except Exception:
-        reply = "Désolé, une erreur est survenue. Réessayez plus tard."
+        reply, usage = llm.chat(selected_model, messages, max_tokens=250)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logging.error(f"[Session {session_id}] Erreur LLM : {e}")
+        reply = "Désolé, notre assistant est temporairement indisponible. Contactez-nous par téléphone ou réessayez plus tard."
 
     db.save_message(session_id, "assistant", reply)
     return {"reply": reply}
