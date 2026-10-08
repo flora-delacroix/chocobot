@@ -10,7 +10,7 @@ SYSTEM_PROMPT = """Tu es ChocoBot, un assistant virtuel automatisé par intellig
 RÔLE ET PERIMÈTRE STRICT :
 1. Tu es une IA d'aide à la vente. Si l'utilisateur te demande si tu es une vraie personne ou un chocolatier humain, tu dois explicitement répondre que tu es un système d'IA automatisé.
 2. Tu réponds UNIQUEMENT aux questions directement liées à la Maison Delcourt : nos chocolats, nos coffrets, nos tarifs, la livraison, les horaires de la boutique et la gestion des allergies.
-3. Tu dois IMPÉRATIVEMENT refuser de traiter toute question hors-sujet (politique, actualités, culture générale, conversations personnelles comme "ça va ?", etc.). 
+3. Tu dois IMPÉRATIVEMENT refuser de traiter toute question hors-sujet (politique, actualités, culture générale, conversations personnelles comme "ça va ?", etc.).
 
 CONSIGNES DE REFUS ET RECADRAGE :
 - Pour tout message hors-sujet, ne tente PAS d'y répondre ni d'épiloguer. Réponds immédiatement par une phrase courte de recadrage : « Je suis un assistant virtuel dédié exclusivement à la Maison Delcourt. Je ne peux vous aider que pour le choix de vos chocolats, nos horaires ou nos services. Comment puis-je vous aider ? »
@@ -30,20 +30,21 @@ CATALOGUE OFFICIEL :
 """ + json.dumps(CATALOG, ensure_ascii=False)
 
 
-def customer_context(customer):
-    """Décrit au LLM ce que le client a enregistré dans le formulaire."""
-    if not any(customer.get(k) for k in ["name", "email", "allergies", "children_ages"]):
-        return "\n\nInformations enregistrées sur le client : aucune."
-    lines = ["\n\nInformations enregistrées sur le client (saisies par lui dans le formulaire) :"]
-    if customer.get("name"):
-        lines.append(f"- Nom : {customer['name']}")
-    if customer.get("email"):
-        lines.append(f"- Email : {customer['email']}")
-    if customer.get("allergies"):
-        lines.append(f"- Allergies : {customer['allergies']}")
-    if customer.get("children_ages"):
-        lines.append(f"- Âge des enfants : {customer['children_ages']}")
-    lines.append("Appelle le client par son prénom, tiens compte de ces informations et réponds à toute question le concernant.")
+def customer_context(email):
+    """Décrit au LLM ce que le client a enregistré."""
+    if not email:
+        return "\n\nAucun utilisateur connecté."
+
+    user = db.get_user(email)
+    if not user or not any(user.get(k) for k in ["allergies_encrypted", "tranche_age"]):
+        return "\n\nAucune information enregistrée sur le client."
+
+    lines = ["\n\nInformations enregistrées sur le client :"]
+    if user.get("allergies_encrypted"):
+        lines.append(f"- Allergies : {user['allergies_encrypted']}")
+    if user.get("tranche_age"):
+        lines.append(f"- Tranche d'âge : {user['tranche_age']}")
+    lines.append("Tiens compte de ces informations et réponds à toute question le concernant.")
     return "\n".join(lines)
 
 
@@ -70,14 +71,14 @@ def get_predifined_response(message_client: str) -> str | None:
     """Analyse le message client et renvoie une réponse prédéfinie si une question simple/récurrente est détectée, évitant ainsi un appel coûteux au LLM."""
     if not message_client:
         return None
-        
+
     msg_normalise = message_client.lower().strip()
-    
+
     for intent, data in PREDEFINED_FAQ.items():
         for pattern in data["keywords"]:
             if re.search(pattern, msg_normalise):
                 return data["response"]
-                
+
     return None
 
 
@@ -104,15 +105,11 @@ def is_simple_query(message: str) -> bool:
     return True
 
 
-def handle_chat(session_id, message):
-    db.save_message(session_id, "user", message)
-    customer = db.get_customer(session_id)
-    print(f"[chat] {customer} : {message}")
+def handle_chat(email, message):
+    print(f"[chat] {email} : {message}")
 
     response_faq = get_predifined_response(message)
     if response_faq:
-        db.save_message(session_id, "assistant", response_faq)
-        
         return {
             "reply": response_faq,
             "prompt_eval_count": 0,
@@ -121,8 +118,8 @@ def handle_chat(session_id, message):
             "from_cache": True
         }
 
-    system = SYSTEM_PROMPT + customer_context(customer)
-    messages = [{"role": "system", "content": system}] + db.get_history(session_id)
+    system = SYSTEM_PROMPT + customer_context(email)
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": message}]
 
     selected_model = llm.SMALL_MODEL if is_simple_query(message) else llm.BIG_MODEL
 
@@ -130,8 +127,7 @@ def handle_chat(session_id, message):
         reply, usage = llm.chat(selected_model, messages, max_tokens=250)
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        logging.error(f"[Session {session_id}] Erreur LLM : {e}")
+        logging.error(f"[Email {email}] Erreur LLM : {e}")
         reply = "Désolé, notre assistant est temporairement indisponible. Contactez-nous par téléphone ou réessayez plus tard."
 
-    db.save_message(session_id, "assistant", reply)
     return {"reply": reply}

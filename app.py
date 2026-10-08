@@ -46,16 +46,17 @@ def home():
 
 @app.post("/profile")
 def profile(body: ProfileIn):
-    db.save_customer(body.session_id, body.name, body.email, body.allergies, body.children_ages)
-    return {"status": "saved"}
+    if body.email:
+        db.save_user(body.email, "password_placeholder", body.allergies, body.children_ages)
+        return {"status": "saved"}
+    return {"status": "ignored"}
 
 
 @app.post("/chat")
 def chat(body: ChatIn):
-    return handle_chat(body.session_id, body.message)
+    return handle_chat(None, body.message)
 
 
-# Back-office de l'équipe Delcourt : pratique pour voir qui a écrit quoi
 @app.get("/admin")
 def admin():
     return FileResponse("static/admin.html")
@@ -63,9 +64,10 @@ def admin():
 
 @app.get("/admin/data")
 def admin_data():
-    data = db.get_all()
-    data["llm"] = {"big": llm.BIG_MODEL, "small": llm.SMALL_MODEL}
-    return data
+    return {
+        "counters": db.get_stats(),
+        "llm": {"big": llm.BIG_MODEL, "small": llm.SMALL_MODEL}
+    }
 
 
 @app.get("/health")
@@ -81,12 +83,11 @@ def health():
         "llm": llm_status
     }
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logging.warning(f"Donnée corrompue/invalide reçue sur {request.url.path} : {exc.errors()}")
-    
     sentry_sdk.capture_message(f"Corrupted Payload on {request.url.path}: {exc.errors()}", level="warning")
-    
     return JSONResponse(
         status_code=400,
         content={"status": "error", "message": "Les données envoyées sont invalides ou corrompues."}

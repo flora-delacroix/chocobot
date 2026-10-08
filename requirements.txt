@@ -6,3 +6,4 @@ sentry-sdk==2.71.0
 pytest==9.1.1
 httpx==0.28.1
 httpx2==2.13.1
+bcrypt
