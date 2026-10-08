@@ -5,6 +5,21 @@ from pydantic import BaseModel
 from chatbot import handle_chat
 import db
 import llm
+import logging
+import sentry_sdk
+
+
+logging.basicConfig(
+    filename="app.log",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+sentry_sdk.init(
+    dsn="https://8462705d7931a9fbb5055da8265f964e@o4512220066676736.ingest.us.sentry.io/4512220093939712",
+    send_default_pii=True,
+)
+
 
 app = FastAPI(title="ChocoBot - Maison Delcourt")
 app.mount("/static", StaticFiles(directory="static"), name="static")
