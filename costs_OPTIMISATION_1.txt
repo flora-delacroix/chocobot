@@ -1,0 +1,14 @@
+
+==================== MESURES DU TEST ====================
+Messages envoyés       : 10 (2 session(s))
+Temps total d'exécution : 68.94 s (moyenne : 6.89 s/msg)
+Tokens consommés       : 638 total (96 in / 542 out)
+Coût estimé en Prod    : 0.00123 € (pour 10 msgs)
+Empreinte carbone Prod : 0.1276 gCO2e
+=========================================================
+
+PROJECTION PROD POUR 100,000 MESSAGES/MOIS :
+- Volume de tokens  : 6,380,000 tokens/mois
+- Coût estimé API   : 12.28 €/mois
+- Empreinte carbone : 1.28 kg CO2e/mois
+=========================================================
