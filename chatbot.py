@@ -1,6 +1,7 @@
 import json, os
 import db
 import llm
+import re
 
 with open(os.path.join(os.path.dirname(__file__), "data", "catalog.json"), encoding="utf-8") as f:
     CATALOG = json.load(f)
@@ -41,10 +42,56 @@ def customer_context(customer):
     return "\n".join(lines)
 
 
+PREDEFINED_FAQ = {
+    "horaires": {
+        "keywords": [r"\bhoraire", r"\bhoraires", r"ouvert", r"ouverte", r"ouverts", r"ouvrez", r"ouverture", r"fermeture", r"fermez", r"fermé", r"fermés", r"fermée", r"\bheure\b"],
+        "response": "La Maison Delcourt est ouverte du lundi au samedi de 10h à 18h, et le dimanche de 11h à 17h."
+    },
+    "adresse_boutique": {
+        "keywords": [r"adresse", r"où êtes-vous", r"ou etes vous", r"magasin", r"boutique", r"situé", r"situés", r"où se trouve", r"ou se trouve"],
+        "response": "Notre chocolaterie est située au cœur du Vieux Lille, au 12 Rue Esquermoise."
+    },
+    "livraison": {
+        "keywords": [r"livraison", r"livrer", r"expédition", r"frais de port", r"colis", r"recevoir"],
+        "response": "Nous proposons des livraisons dans toute la métropole lilloise. Vous pouvez choisir la date et l'heure de livraison lors de votre commande en ligne."
+    },
+    "contact": {
+        "keywords": [r"téléphone", r"telephone", r"mail", r"email", r"contact", r"joindre", r"appeler"],
+        "response": "Vous pouvez nous contacter par téléphone au 03 20 00 00 00 (de 10h à 18h du lundi au samedi ou de 11h à 17h le dimanche) ou par e-mail à l'adresse contact@chocolaterie-delcourt.fr."
+    }
+}
+
+def get_predifined_response(message_client: str) -> str | None:
+    """Analyse le message client et renvoie une réponse prédéfinie si une question simple/récurrente est détectée, évitant ainsi un appel coûteux au LLM."""
+    if not message_client:
+        return None
+        
+    msg_normalise = message_client.lower().strip()
+    
+    for intent, data in PREDEFINED_FAQ.items():
+        for pattern in data["keywords"]:
+            if re.search(pattern, msg_normalise):
+                return data["response"]
+                
+    return None
+
+
 def handle_chat(session_id, message):
     db.save_message(session_id, "user", message)
     customer = db.get_customer(session_id)
     print(f"[chat] {customer} : {message}")
+
+    response_faq = get_predifined_response(message)
+    if response_faq:
+        db.save_message(session_id, "assistant", response_faq)
+        
+        return {
+            "reply": response_faq,
+            "prompt_eval_count": 0,
+            "eval_count": 0,
+            "eval_duration": 0,
+            "from_cache": True
+        }
 
     system = SYSTEM_PROMPT + customer_context(customer)
     messages = [{"role": "system", "content": system}] + db.get_history(session_id)
