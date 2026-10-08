@@ -1,7 +1,6 @@
 import json, os
-import db
-import llm
-import re
+import db, llm, re
+import logging, sentry_sdk
 
 with open(os.path.join(os.path.dirname(__file__), "data", "catalog.json"), encoding="utf-8") as f:
     CATALOG = json.load(f)
@@ -104,8 +103,10 @@ def handle_chat(session_id, message):
 
     try:
         reply, usage = llm.chat(llm.BIG_MODEL, messages, max_tokens=250)
-    except Exception:
-        reply = "Désolé, une erreur est survenue. Réessayez plus tard."
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logging.error(f"[Session {session_id}] Erreur LLM : {e}")
+        reply = "Désolé, notre assistant est temporairement indisponible. Contactez-nous par téléphone ou réessayez plus tard."
 
     db.save_message(session_id, "assistant", reply)
     return {"reply": reply}

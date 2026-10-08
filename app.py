@@ -3,10 +3,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from chatbot import handle_chat
-import db
-import llm
-import logging
-import sentry_sdk
+import db, llm
+import logging, sentry_sdk
 
 
 logging.basicConfig(
@@ -69,4 +67,13 @@ def admin_data():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    try:
+        llm.chat(llm.SMALL_MODEL, [{"role": "user", "content": "ping"}], max_tokens=1)
+        llm_status = "ok"
+    except Exception:
+        llm_status = "unreachable"
+
+    return {
+        "status": "ok" if llm_status == "ok" else "degraded",
+        "llm": llm_status
+    }
