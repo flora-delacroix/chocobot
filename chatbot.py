@@ -84,7 +84,7 @@ def get_predifined_response(message_client: str) -> str | None:
 def is_simple_query(message: str) -> bool:
     """
     Détermine si une requête est suffisamment simple pour le modèle léger (1B).
-    Si le message contient une demande de conseil, de produit ou de personnalisation,     on renvoie False pour utiliser le grand modèle (3B).
+    Si le message contient une demande de conseil, de produit ou de personnalisation, on renvoie False pour utiliser le grand modèle (3B).
     """
     msg = message.lower().strip()
     words = msg.split()
