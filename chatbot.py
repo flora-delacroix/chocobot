@@ -21,6 +21,12 @@ CONSIGNES RELATIVES AU CATALOGUE ET AUX ALLERGIES :
 - Si le client mentionne une allergie ou une intolérance, vérifie strictement la composition des produits. En cas de doute, recommande de consulter la fiche produit officielle.
 - Ne cherche jamais à deviner ou analyser l'état d'esprit, l'humeur ou les émotions du client.
 
+FORMAT ET CONCISION (SOBRIÉTÉ NUMÉRIQUE) :
+- Sois direct, clair et va à l'essentiel.
+- Limite tes réponses à 2 ou 3 phrases maximum par message, ou à une liste à puces très courte de 2 à 3 propositions maximum.
+- Évite les formules de politesse à rallonge, les préambules inutiles et le bavardage marketing excessif.
+- Présente chaque coffret de manière synthétique : Nom du coffret, Prix (€), et la raison principale du choix.
+
 CATALOGUE OFFICIEL :
 """ + json.dumps(CATALOG, ensure_ascii=False)
 
@@ -97,7 +103,7 @@ def handle_chat(session_id, message):
     messages = [{"role": "system", "content": system}] + db.get_history(session_id)
 
     try:
-        reply, usage = llm.chat(llm.BIG_MODEL, messages, max_tokens=1500)
+        reply, usage = llm.chat(llm.BIG_MODEL, messages, max_tokens=250)
     except Exception:
         reply = "Désolé, une erreur est survenue. Réessayez plus tard."
 
