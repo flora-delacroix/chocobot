@@ -7,8 +7,7 @@
 <style>
 :root{--cacao:#2b1810;--cacao2:#4a2a1c;--creme:#f6ecdc;--papier:#fbf5ea;--or:#b8893b;--framboise:#a3243b;--ligne:#e4d5bb}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--creme);color:var(--cacao);font-family:Georgia,"Times New Roman",serif;
- background-image:radial-gradient(circle at 20% 0%,#fff7e6 0,transparent 45%),repeating-linear-gradient(45deg,transparent 0 22px,rgba(184,137,59,.05) 22px 23px)}
+body{margin:0;min-height:100vh;background:var(--creme);color:var(--cacao);font-family:Georgia,"Times New Roman",serif;background-image:radial-gradient(circle at 20% 0%,#fff7e6 0,transparent 45%),repeating-linear-gradient(45deg,transparent 0 22px,rgba(184,137,59,.05) 22px 23px)}
 header{background:var(--cacao);color:var(--creme);padding:22px 28px;border-bottom:4px solid var(--or);display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
 header h1{margin:0;font-size:1.7rem;letter-spacing:.04em;font-weight:700}
 header span{font-style:italic;color:#d9bf8c;font-size:.95rem}
@@ -34,17 +33,34 @@ form#send input{flex:1;padding:12px 14px;border:1px solid var(--ligne);border-ra
 button.go{background:var(--framboise);color:#fff;border:0;border-radius:6px;padding:0 20px;font:inherit;font-weight:700;cursor:pointer}
 button.go:hover{filter:brightness(1.1)}
 aside{padding:20px;align-self:start}
-aside h2{margin:0 0 4px;font-size:1.05rem}
-aside p{margin:0 0 14px;font-size:.85rem;color:#6b5445;font-style:italic}
-aside label{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 3px;color:var(--cacao2)}
-.save{width:100%;margin-top:16px;padding:11px 8px}
-#saved{margin-top:8px;font-size:.82rem;color:#3d7a3d;min-height:1.2em}
+aside h2{margin:0 0 8px;font-size:1.1rem}
+aside p{margin:0;font-size:.85rem;color:#666}
 button.go:disabled{opacity:.55;cursor:wait}
-aside input{width:100%;padding:9px 10px;border:1px solid var(--ligne);border-radius:5px;font:inherit;background:#fff}
+.info-banner{background:#f0f8ff;border-left:4px solid var(--or);padding:12px 14px;border-radius:4px;font-size:.9rem}
+.info-banner a{color:var(--or);text-decoration:none;font-weight:600;cursor:pointer}
+.info-banner a:hover{text-decoration:underline}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center}
+.modal.active{display:flex}
+.modal-content{background:#fff;border-radius:8px;padding:28px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modal-content h2{margin-top:0;color:var(--cacao);font-size:1.4rem}
+.modal-content h3{color:var(--cacao2);font-size:1.05rem;margin:14px 0 8px}
+.modal-content p{font-size:.9rem;line-height:1.5;margin:8px 0;color:#4a4a4a}
+.modal-content ul{font-size:.9rem;margin:8px 0;padding-left:18px}
+.modal-content li{margin:3px 0}
+.modal-close{position:absolute;top:16px;right:16px;background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--cacao)}
+.modal-close:hover{color:var(--or)}
+input[type="email"], input[type="password"], input[type="text"], select{width:100%;padding:8px;border:1px solid var(--ligne);border-radius:4px;font:inherit;font-size:.9rem}
+.msg-result{font-size:.8rem;margin-top:6px}
+a.auth-link{display:inline-block;width:100%;padding:12px;text-align:center;background:var(--framboise);color:white;text-decoration:none;border-radius:6px;font-weight:700;transition:filter .2s}
+a.auth-link:hover{filter:brightness(1.1)}
+a.auth-link.login{background:#999;margin-top:8px}
 </style>
 </head>
 <body>
-<header><h1>MAISON DELCOURT</h1><span>Chocolatier artisanal · Lille</span><button id="reset" class="ghost">Nouvelle conversation</button></header>
+<header><h1>MAISON DELCOURT · ChocoBot</h1><span>Conseiller IA • Chocolatier artisanal · Lille</span><div style="margin-left:auto;display:flex;gap:12px;align-items:center"><span id="user_status" style="font-size:0.9rem;color:#d9bf8c"></span><button id="reset" class="ghost">Nouvelle conversation</button></div></header>
+<div class="info-banner" style="max-width:1000px;margin:20px auto 0;padding:0 16px">
+ <span>Vos données personnelles sont protégées • <a onclick="openNoticeModal()">Lire la Notice</a></span>
+</div>
 <main>
  <section id="chat" class="box">
   <div id="log"></div>
@@ -58,31 +74,93 @@ aside input{width:100%;padding:9px 10px;border:1px solid var(--ligne);border-rad
   <form id="send"><input id="msg" autocomplete="off" placeholder="Écrivez votre message…" required><button class="go" id="go">Envoyer</button></form>
  </section>
  <aside class="box">
-  <h2>Pour mieux vous conseiller</h2>
-  <p>Ces informations nous aident à choisir le coffret idéal.</p>
-  <label for="name">Prénom et nom</label><input id="name">
-  <label for="email">Email</label><input id="email" type="email">
-  <label for="allergies">Allergies</label><input id="allergies" placeholder="ex. noisettes, gluten">
-  <label for="kids">Âge des enfants</label><input id="kids" placeholder="ex. 6, 9">
-  <button id="save" class="go save" type="button">Enregistrer mes informations</button>
-  <div id="saved"></div>
+  <h2>S'inscrire</h2>
+  <p style="margin-bottom:6px">Pour des recommandations personnalisées</p>
+  <p style="font-size:0.75rem;color:#999;margin-bottom:12px">(Optionnel - le chat fonctionne sans inscription)</p>
+
+  <!-- INSCRIPTION / CONNEXION REQUISE -->
+  <div id="auth_section" style="background:#f9f9f9;padding:12px;border-radius:4px;margin-bottom:16px;border-left:3px solid var(--or)">
+   <a href="/static/signup.html" class="auth-link">S'inscrire</a>
+   <a href="/static/login.html" class="auth-link login">Connexion</a>
+  </div>
+
+  <!-- PRÉFÉRENCES OPTIONNELLES (visible seulement après inscription) -->
+  <div id="prefs_section" style="display:none">
+   <p style="font-size:0.8rem;color:#666;margin:16px 0 10px;border-top:1px solid var(--ligne);padding-top:12px">Préférences (optionnel)</p>
+
+   <div style="border:1px solid var(--ligne);padding:10px;border-radius:4px;margin-bottom:10px">
+    <label style="display:flex;gap:8px;cursor:pointer;margin-bottom:6px">
+     <input id="consent_allergies" type="checkbox" style="flex-shrink:0;margin-top:2px">
+     <span><strong style="font-size:0.9rem">Allergies</strong></span>
+     <button onclick="openAllergiesInfo()" style="background:transparent;border:1px solid var(--or);color:var(--or);border-radius:50%;width:18px;height:18px;padding:0;font:bold 0.75rem;cursor:pointer;margin-left:auto;flex-shrink:0">?</button>
+    </label>
+    <p style="font-size:0.75rem;color:#666;margin:0 0 8px 24px">Pour votre sécurité alimentaire</p>
+    <div id="allergies_field" style="display:none;margin-left:24px">
+     <input id="allergies" type="text" placeholder="noisettes, gluten, lait...">
+    </div>
+   </div>
+
+   <div style="border:1px solid var(--ligne);padding:10px;border-radius:4px;margin-bottom:12px">
+    <label style="display:flex;gap:8px;cursor:pointer;margin-bottom:6px">
+     <input id="consent_kids" type="checkbox" style="flex-shrink:0;margin-top:2px">
+     <span><strong style="font-size:0.9rem">Conseils pour enfant(s)</strong></span>
+    </label>
+    <div id="kids_field" style="display:none;margin-left:24px">
+     <select id="kids">
+      <option value="">Sélectionner l'âge...</option>
+      <option value="enfant">3-6 ans</option>
+      <option value="adolescent">7-15 ans</option>
+      <option value="adulte">16 ans et plus</option>
+     </select>
+    </div>
+   </div>
+
+   <button id="save" class="go" style="width:100%;margin-bottom:12px">Enregistrer mes préférences</button>
+   <div id="saved" class="msg-result"></div>
+
+   <div style="border-top:1px solid var(--ligne);padding-top:12px;margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="withdraw" class="go" style="flex:1;background:#b8893b;min-width:140px">Supprimer allergies & enfants</button>
+    <button id="delete" class="go" style="flex:1;background:#a3243b;min-width:140px">Supprimer tout le compte</button>
+   </div>
+   <div id="deleted" class="msg-result" style="margin-top:6px"></div>
+
+   <div style="border-top:1px solid var(--ligne);padding-top:12px;margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="export" class="go" style="flex:1;background:#666;min-width:140px;font-size:0.85rem">Exporter mes données</button>
+    <button id="complaint" class="go" style="flex:1;background:#666;min-width:120px;font-size:0.85rem">Réclamation</button>
+   </div>
+   <div id="action_msg" class="msg-result" style="margin-top:6px"></div>
+  </div>
  </aside>
 </main>
 <script>
 const log = document.getElementById("log");
-const ids = ["name", "email", "allergies", "kids"];
+const ids = ["email", "password", "allergies", "kids"];
+const consentIds = ["consent_allergies", "consent_kids"];
 const el = id => document.getElementById(id);
 let sid = localStorage.sid || (localStorage.sid = crypto.randomUUID());
 let busy = false;
 
+// RESTAURER ÉTAT D'INSCRIPTION APRÈS REFRESH
+function restoreAuthState(){
+  const savedEmail = localStorage.user_email;
+
+  if (savedEmail) {
+    el("prefs_section").style.display = "block";
+    el("user_status").textContent = "Connecté en tant que " + savedEmail;
+    el("auth_section").style.display = "none";
+  }
+}
+restoreAuthState();
+
 function add(text, who){
   const d = document.createElement("div"); d.className = "msg " + who;
-  d.innerHTML = '<div class="who">' + (who === "bot" ? "Clémence · Maison Delcourt" : "Vous") + "</div>";
+  d.innerHTML = '<div class="who">' + (who === "bot" ? "ChocoBot" : "Vous") + "</div>";
   const t = document.createElement("div"); t.textContent = text; d.appendChild(t);
   log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
 }
 function welcome(){
-  add("Bonjour, je suis Clémence, conseillère à la Maison Delcourt. Pour quelle occasion cherchez-vous des chocolats ?", "bot");
+  add("Je suis ChocoBot, un assistant automatisé par IA. Mes conseils sont basés sur vos préférences.", "bot");
+  setTimeout(() => add("Pour quelle occasion cherchez-vous des chocolats ?", "bot"), 800);
 }
 async function post(path, payload){
   const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
@@ -96,9 +174,14 @@ async function send(text){
   const wait = add("", "bot");
   wait.lastChild.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>';
   try {
-    wait.lastChild.textContent = (await post("/chat", {session_id: sid, message: text})).reply;
+    const email = localStorage.user_email || null;
+    const res = await post("/chat", {email, message: text});
+    wait.lastChild.textContent = res.reply;
+    el("msg").value = "";  // Vider que si succès
   } catch (e) {
-    wait.lastChild.textContent = "Désolé, une erreur est survenue.";
+    wait.lastChild.textContent = "❌ Erreur: " + (e.message || "Serveur indisponible");
+    console.error(e);
+    // Laisser le texte dans le champ pour réessayer
   }
   busy = false; el("go").disabled = false; el("msg").focus();
   log.scrollTop = log.scrollHeight;
@@ -106,30 +189,233 @@ async function send(text){
 el("send").onsubmit = e => {
   e.preventDefault();
   const i = el("msg");
-  if (i.value.trim()) { send(i.value.trim()); i.value = ""; }
+  if (i.value.trim()) {
+    const txt = i.value.trim();
+    send(txt);
+    // Ne vider que si pas d'erreur (on laisse le texte si erreur pour réessayer)
+    setTimeout(() => { if (!busy) i.value = ""; }, 500);
+  }
 };
 document.querySelectorAll(".chip").forEach(c => c.onclick = () => send(c.textContent));
 
-// Les informations ne partent qu'au clic sur le bouton
+
+// ENREGISTRER PRÉFÉRENCES
 el("save").onclick = async () => {
-  el("save").disabled = true;
-  try {
-    await post("/profile", {session_id: sid, name: el("name").value, email: el("email").value,
-                            allergies: el("allergies").value, children_ages: el("kids").value});
-    el("saved").style.color = "#3d7a3d"; el("saved").textContent = "✓ Informations enregistrées";
-  } catch (e) {
-    el("saved").style.color = "#a3243b"; el("saved").textContent = "Échec de l'enregistrement";
+  const email = localStorage.user_email;
+  if (!email) {
+    el("saved").style.color = "#a3243b";
+    el("saved").textContent = "Erreur: pas connecté";
+    return;
   }
-  el("save").disabled = false;
+
+  const allergies = el("allergies").value || null;
+  const tranche_age = el("kids").value || null;
+
+  try {
+    const res = await post("/update-preferences", {email, allergies_encrypted: allergies, tranche_age});
+    if (res.status === "preferences_updated") {
+      el("saved").style.color = "#3d7a3d";
+      el("saved").textContent = "Enregistré";
+    }
+  } catch (e) {
+    el("saved").style.color = "#a3243b";
+    el("saved").textContent = "Erreur: " + (e.message || "Sauvegarde échouée");
+  }
 };
-ids.forEach(id => el(id).addEventListener("input", () => el("saved").textContent = ""));
+
+["allergies", "kids"].forEach(id => el(id).addEventListener("input", () => el("saved").textContent = ""));
+consentIds.forEach(id => el(id).addEventListener("change", () => {
+  el("saved").textContent = "";
+  el("allergies_field").style.display = el("consent_allergies").checked ? "block" : "none";
+  el("kids_field").style.display = el("consent_kids").checked ? "block" : "none";
+}));
+
+// SUPPRIMER COMPTE COMPLET
+el("delete").onclick = async () => {
+  if (!confirm("Supprimer votre compte entièrement?\n\nCeci supprimera:\n- Votre email et mot de passe\n- Vos allergies\n- Vos préférences enfants\n- TOUT sera irréversible")) return;
+
+  const password = prompt("Entrez votre mot de passe pour confirmer la suppression:");
+  if (!password) return;
+
+  const email = localStorage.user_email;
+  try {
+    const res = await post("/delete", {email, mot_de_passe: password});
+    if (res.status === "account_deleted") {
+      el("deleted").style.color = "#3d7a3d";
+      el("deleted").textContent = "Compte supprimé";
+      el("allergies").value = "";
+      el("kids").value = "";
+      consentIds.forEach(id => el(id).checked = false);
+      el("prefs_section").style.display = "none";
+      el("user_status").textContent = "";
+      el("auth_section").style.display = "block";
+      el("allergies_field").style.display = "none";
+      el("kids_field").style.display = "none";
+      clearAuth();
+    }
+  } catch (e) {
+    el("deleted").style.color = "#a3243b";
+    el("deleted").textContent = "❌ Erreur: " + (e.message || "Suppression échouée");
+  }
+};
 
 el("reset").onclick = () => {
+  clearAuth();
+  el("user_status").textContent = "";
+  el("auth_section").style.display = "block";
+  el("prefs_section").style.display = "none";
+  el("consent_allergies").checked = false;
+  el("consent_kids").checked = false;
+  el("allergies").value = "";
+  el("kids").value = "";
+  el("allergies_field").style.display = "none";
+  el("kids_field").style.display = "none";
   sid = localStorage.sid = crypto.randomUUID();
-  log.innerHTML = ""; ids.forEach(id => el(id).value = ""); el("saved").textContent = "";
+  log.innerHTML = "";
   welcome();
 };
+
+function openNoticeModal(){
+  el("noticeModal").classList.add("active");
+}
+function closeNoticeModal(){
+  el("noticeModal").classList.remove("active");
+}
+function clearAuth(){
+  delete localStorage.user_email;
+}
+
+// SUPPRIMER ALLERGIES & ENFANTS
+el("withdraw").onclick = async () => {
+  if (!confirm("Supprimer vos allergies et données enfants?\n\nCes données seront supprimées immédiatement.\nVotre compte email restera actif.")) return;
+
+  const password = prompt("Entrez votre mot de passe pour confirmer:");
+  if (!password) return;
+
+  const email = localStorage.user_email;
+  try {
+    const res = await post("/delete-allergies", {email, mot_de_passe: password});
+    if (res.status === "allergies_deleted") {
+      el("consent_allergies").checked = false;
+      el("consent_kids").checked = false;
+      el("allergies").value = "";
+      el("kids").value = "";
+      el("allergies_field").style.display = "none";
+      el("kids_field").style.display = "none";
+      el("deleted").style.color = "#3d7a3d";
+      el("deleted").textContent = "Allergies & enfants supprimés";
+    }
+  } catch (e) {
+    el("deleted").style.color = "#a3243b";
+    el("deleted").textContent = "❌ Erreur: " + (e.message || "Suppression échouée");
+  }
+};
+
+// EXPORTER DONNÉES
+el("export").onclick = () => {
+  const email = localStorage.user_email;
+  const data = {
+    email: email,
+    allergies: el("allergies").value,
+    enfants: el("kids").value,
+    exported_at: new Date().toLocaleString("fr-FR")
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `chocobot-data-${email}.json`;
+  a.click();
+  el("action_msg").style.color = "#3d7a3d";
+  el("action_msg").textContent = "Données exportées";
+};
+
+// RÉCLAMATION
+el("complaint").onclick = () => {
+  const email = localStorage.user_email;
+  alert(`Réclamation pour ${email}\n\nContactez-nous: contact@maisondelcourt.fr\nObjet: Réclamation IA Act`);
+};
+
 welcome();
+</script>
+
+<div id="noticeModal" class="modal">
+ <div class="modal-content">
+  <button class="modal-close">✕</button>
+  <h2>Notice d'Information</h2>
+  <p><strong>Article 13 RGPD</strong></p>
+
+  <h3>Responsable</h3>
+  <p>Maison Delcourt, Chocolatier artisanal · Lille<br>contact@maisondelcourt.fr</p>
+
+  <h3>Données collectées</h3>
+  <ul><li>Email et mot de passe (inscription)</li><li>Allergies (optionnel)</li><li>Âge des enfants (optionnel)</li><li>Logs techniques</li></ul>
+
+  <h3>Finalités</h3>
+  <ul><li>Recommandations de coffrets</li><li>Amélioration du service</li><li>Sécurité</li></ul>
+
+  <h3>Bases légales</h3>
+  <ul><li>Inscription: Consentement</li><li>Allergies: Consentement explicite</li><li>Logs: Intérêt légitime</li></ul>
+
+  <h3>Conservation</h3>
+  <ul><li>Conversations: 24h</li><li>Profil: 3 ans après inactivité</li><li>Allergies: 1 an après inactivité</li><li>Logs: 12 mois</li></ul>
+
+  <h3>Vos droits</h3>
+  <ul><li>Accès à vos données</li><li>Rectification</li><li>Suppression (moins de 30 jours)</li><li>Opposition</li><li>Retrait de consentement</li></ul>
+
+  <p style="margin-top:16px;padding-top:16px;border-top:1px solid #e4d5bb;font-size:.85rem">En utilisant ce service, vous acceptez le traitement selon ces conditions.</p>
+
+  <button onclick="closeNoticeModal()" style="width:100%;padding:10px;margin-top:12px;background:var(--or);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:700;font:inherit">Fermer</button>
+ </div>
+</div>
+
+<!-- INFO ALLERGIES -->
+<div id="allergiesInfoModal" class="modal">
+ <div class="modal-content">
+  <button class="modal-close" onclick="closeAllergiesInfo()">✕</button>
+  <h2>Enregistrer vos allergies</h2>
+  <p>Pour que nos recommandations soient adaptées à votre sécurité alimentaire.</p>
+
+  <h3>Exemples courants</h3>
+  <ul>
+   <li>Fruits à coque (noisettes, amandes, cacahuètes)</li>
+   <li>Gluten</li>
+   <li>Produits laitiers</li>
+   <li>Œufs</li>
+  </ul>
+
+  <h3>Sécurité</h3>
+  <ul>
+   <li>Données chiffrées en AES-256</li>
+   <li>Conservées 1 an après inactivité</li>
+   <li>Accès, modification, suppression possibles</li>
+   <li>Retrait du consentement à tout moment</li>
+  </ul>
+
+  <p style="margin-top:16px;padding-top:16px;border-top:1px solid #e4d5bb;font-size:.85rem"><strong>Vos droits RGPD:</strong> accès, rectification, oubli, opposition, retrait du consentement.</p>
+
+  <button onclick="closeAllergiesInfo()" style="width:100%;padding:10px;margin-top:12px;background:var(--or);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:700;font:inherit">Fermer</button>
+ </div>
+</div>
+
+<script>
+function openAllergiesInfo(){
+  document.getElementById("allergiesInfoModal").classList.add("active");
+}
+function closeAllergiesInfo(){
+  document.getElementById("allergiesInfoModal").classList.remove("active");
+}
+document.querySelectorAll(".modal-close").forEach(btn => {
+  btn.onclick = (e) => {
+    e.target.closest(".modal").classList.remove("active");
+  };
+});
+document.querySelectorAll(".modal").forEach(modal => {
+  modal.onclick = (e) => {
+    if(e.target === modal) modal.classList.remove("active");
+  };
+});
 </script>
 </body>
 </html>

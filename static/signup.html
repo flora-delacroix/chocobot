@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S'inscrire - ChocoBot</title>
+<style>
+:root{--cacao:#2b1810;--cacao2:#4a2a1c;--creme:#f6ecdc;--papier:#fbf5ea;--or:#b8893b;--framboise:#a3243b;--ligne:#e4d5bb}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--creme);color:var(--cacao);font-family:Georgia,"Times New Roman",serif;background-image:radial-gradient(circle at 20% 0%,#fff7e6 0,transparent 45%),repeating-linear-gradient(45deg,transparent 0 22px,rgba(184,137,59,.05) 22px 23px);display:flex;align-items:center;justify-content:center}
+.container{background:var(--papier);border:1px solid var(--ligne);border-radius:8px;box-shadow:0 6px 22px rgba(43,24,16,.12);max-width:400px;width:90%;padding:40px}
+h1{margin:0 0 8px;font-size:1.5rem;color:var(--cacao)}
+.subtitle{font-size:0.9rem;color:#666;margin-bottom:24px}
+label{display:block;font-size:0.75rem;color:var(--cacao2);font-weight:600;margin:16px 0 6px}
+input{width:100%;padding:10px;border:1px solid var(--ligne);border-radius:4px;font:inherit;font-size:0.9rem;margin-bottom:4px}
+.hint{font-size:0.7rem;color:#999;margin-bottom:12px}
+button{width:100%;background:var(--framboise);color:#fff;border:0;border-radius:6px;padding:12px;font:inherit;font-weight:700;cursor:pointer;margin-top:20px;font-size:1rem}
+button:hover{filter:brightness(1.1)}
+.link{text-align:center;margin-top:16px;font-size:0.9rem}
+.link a{color:var(--or);text-decoration:none;font-weight:600}
+.link a:hover{text-decoration:underline}
+.message{margin-top:16px;padding:12px;border-radius:4px;font-size:0.85rem;display:none}
+.message.error{background:#ffebee;color:#c62828}
+.message.success{background:#e8f5e9;color:#2e7d32}
+</style>
+</head>
+<body>
+<div class="container">
+ <h1>S'inscrire</h1>
+ <p class="subtitle">Créez votre compte pour des recommandations personnalisées</p>
+
+ <form id="signup_form">
+  <label for="email">Email</label>
+  <input id="email" type="email" placeholder="votre@email.com" required>
+
+  <label for="password">Mot de passe</label>
+  <input id="password" type="password" placeholder="••••••••" required>
+  <p class="hint">Min. 8 caractères</p>
+
+  <label for="password_confirm">Confirmer mot de passe</label>
+  <input id="password_confirm" type="password" placeholder="••••••••" required>
+
+  <button type="submit">S'inscrire</button>
+  <div id="message" class="message"></div>
+ </form>
+
+ <div class="link">
+  Vous avez un compte? <a href="/static/login.html">Se connecter</a>
+ </div>
+</div>
+
+<script>
+const form = document.getElementById("signup_form");
+const messageDiv = document.getElementById("message");
+
+form.onsubmit = async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const passwordConfirm = document.getElementById("password_confirm").value;
+
+  if (password !== passwordConfirm) {
+    showMessage("Les mots de passe ne correspondent pas", "error");
+    return;
+  }
+
+  if (password.length < 8) {
+    showMessage("Le mot de passe doit contenir au moins 8 caractères", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch("/signup", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email, mot_de_passe: password})
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      showMessage("Inscription réussie! Redirection...", "success");
+      setTimeout(() => window.location.href = "/static/login.html", 1500);
+    } else {
+      showMessage(data.message || "Erreur lors de l'inscription", "error");
+    }
+  } catch (error) {
+    showMessage("Erreur réseau. Réessayez plus tard.", "error");
+  }
+};
+
+function showMessage(text, type) {
+  messageDiv.textContent = text;
+  messageDiv.className = "message " + type;
+  messageDiv.style.display = "block";
+}
+</script>
+</body>
+</html>
