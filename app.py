@@ -119,6 +119,24 @@ def delete_account(body: SignupIn):
     return {"status": "account_deleted"}
 
 
+@app.post("/profile")
+def get_profile(body: SignupIn):
+    """Récupère le profil utilisateur (pour export RGPD)."""
+    user = db.get_user(body.email)
+    if not user:
+        return JSONResponse(status_code=401, content={"status": "error", "message": "user_not_found"})
+    if not db.verify_password(body.mot_de_passe, user["mot_de_passe_hash"]):
+        return JSONResponse(status_code=401, content={"status": "error", "message": "wrong_password"})
+
+    return {
+        "email": body.email,
+        "allergies": user.get("allergies_encrypted"),
+        "tranche_age": user.get("tranche_age"),
+        "created_at": user.get("created_at"),
+        "last_activity": user.get("last_activity")
+    }
+
+
 @app.get("/admin")
 def admin():
     return FileResponse("static/admin.html")
