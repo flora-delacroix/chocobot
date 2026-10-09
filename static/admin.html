@@ -18,40 +18,83 @@ th,td{padding:8px 12px;border-bottom:1px solid #f0e6d2;text-align:left;vertical-
 th{background:#faf3e4;position:sticky;top:0}
 td.u{color:#a3243b}
 small{color:#7a6657}
+.login-required{display:none;max-width:300px;margin:40px auto;padding:24px;background:#fff;border:1px solid #e4d5bb;border-radius:6px;text-align:center}
+.login-required.show{display:block}
+.login-required input{width:100%;padding:8px;margin-bottom:12px;border:1px solid #e4d5bb;border-radius:4px;font:inherit;box-sizing:border-box}
+.login-required button{width:100%;padding:10px;background:#a3243b;color:#fff;border:0;border-radius:4px;font-weight:700;cursor:pointer}
+.login-required .error{color:#a3243b;font-size:.85rem;margin-top:8px}
+#content{display:block}
+#content.hidden{display:none}
 </style>
 </head>
 <body>
-<header><h1>Back-office ChocoBot · Maison Delcourt</h1></header>
-<main>
- <div class="stats">
-  <div class="stat"><b id="nc">–</b>clients</div>
-  <div class="stat"><b id="nm">–</b>messages (200 derniers)</div>
-  <div class="stat"><b id="mode">–</b>modèle LLM (Ollama)</div>
-  <div class="stat"><b>non suivi</b>tokens / coût / erreurs</div>
- </div>
- <h2>Clients</h2>
- <div class="wrap"><table id="tc"></table></div>
- <h2>Conversations</h2>
- <div class="wrap"><table id="tm"></table></div>
- <p><small>Base SQLite : fichier <code>chocobot.db</code> à la racine du projet.</small></p>
+<div id="login_box" class="login-required show">
+  <h2>Connexion requise</h2>
+  <input id="user" type="text" placeholder="admin" value="admin">
+  <input id="pass" type="password" placeholder="admin" value="admin">
+  <button onclick="doLogin()">Connexion</button>
+  <div id="err" class="error"></div>
+</div>
+
+<header id="header_box" class="hidden"><h1>Back-office ChocoBot · Maison Delcourt</h1></header>
+
+<main id="content" class="hidden">
+<div class="stats">
+<div class="stat"><b id="nc">–</b>clients</div>
+<div class="stat"><b id="nm">–</b>messages (200 derniers)</div>
+<div class="stat"><b id="mode">–</b>modèle LLM (Ollama)</div>
+<div class="stat"><b>non suivi</b>tokens / coût / erreurs</div>
+</div>
+<h2>Clients</h2>
+<div class="wrap"><table id="tc"></table></div>
+<h2>Conversations</h2>
+<div class="wrap"><table id="tm"></table></div>
+<p><small>Base SQLite : fichier <code>chocobot.db</code> à la racine du projet.</small></p>
+<button onclick="doLogout()" style="margin-top:20px;padding:8px 16px;background:#b8893b;color:#fff;border:0;border-radius:4px;cursor:pointer">Déconnexion</button>
 </main>
+
 <script>
+function doLogin(){
+  if(document.getElementById("user").value==="admin"&&document.getElementById("pass").value==="admin"){
+    localStorage.admin=1;
+    showContent();
+  }else{
+    document.getElementById("err").textContent="Incorrect";
+  }
+}
+function doLogout(){
+  delete localStorage.admin;
+  document.getElementById("login_box").classList.add("show");
+  document.getElementById("header_box").classList.add("hidden");
+  document.getElementById("content").classList.add("hidden");
+}
+function showContent(){
+  document.getElementById("login_box").classList.remove("show");
+  document.getElementById("header_box").classList.remove("hidden");
+  document.getElementById("content").classList.remove("hidden");
+  loadData();
+}
+if(localStorage.admin){
+  showContent();
+}
 const fmt = t => new Date(t * 1000).toLocaleString("fr-FR");
 function table(el, cols, rows){
-  el.innerHTML = "<tr>" + cols.map(c => "<th>" + c[1] + "</th>").join("") + "</tr>" +
-    rows.map(r => "<tr>" + cols.map(c => {
-      const v = c[0] === "created_at" ? fmt(r[c[0]]) : r[c[0]];
-      const d = document.createElement("div"); d.textContent = v ?? "";
-      return "<td" + (c[0] === "role" && r.role === "user" ? ' class="u"' : "") + ">" + d.innerHTML + "</td>";
+el.innerHTML = "<tr>" + cols.map(c => "<th>" + c[1] + "</th>").join("") + "</tr>" +
+rows.map(r => "<tr>" + cols.map(c => {
+const v = c[0] === "created_at" ? fmt(r[c[0]]) : r[c[0]];
+const d = document.createElement("div"); d.textContent = v ?? "";
+return "<td" + (c[0] === "role" && r.role === "user" ? ' class="u"' : "") + ">" + d.innerHTML + "</td>";
     }).join("") + "</tr>").join("");
 }
-fetch("/admin/data").then(r => r.json()).then(d => {
-  document.getElementById("nc").textContent = d.customers.length;
-  document.getElementById("nm").textContent = d.messages.length;
-  document.getElementById("mode").textContent = d.llm.big;
-  table(document.getElementById("tc"), [["created_at","Date"],["name","Nom"],["email","Email"],["allergies","Allergies"],["children_ages","Enfants"],["session_id","Session"]], d.customers);
-  table(document.getElementById("tm"), [["created_at","Date"],["session_id","Session"],["role","Rôle"],["content","Message"]], d.messages);
-});
+function loadData(){
+  fetch("/admin/data").then(r => r.json()).then(d => {
+    document.getElementById("nc").textContent = d.customers.length;
+    document.getElementById("nm").textContent = d.messages.length;
+    document.getElementById("mode").textContent = d.llm.big;
+    table(document.getElementById("tc"), [["created_at","Date"],["name","Nom"],["email","Email"],["allergies","Allergies"],["children_ages","Enfants"],["session_id","Session"]], d.customers);
+    table(document.getElementById("tm"), [["created_at","Date"],["session_id","Session"],["role","Rôle"],["content","Message"]], d.messages);
+  });
+}
 </script>
 </body>
 </html>

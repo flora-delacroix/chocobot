@@ -51,10 +51,13 @@ button.go:disabled{opacity:.55;cursor:wait}
 .modal-close:hover{color:var(--or)}
 input[type="email"], input[type="password"], input[type="text"], select{width:100%;padding:8px;border:1px solid var(--ligne);border-radius:4px;font:inherit;font-size:.9rem}
 .msg-result{font-size:.8rem;margin-top:6px}
+a.auth-link{display:inline-block;width:100%;padding:12px;text-align:center;background:var(--framboise);color:white;text-decoration:none;border-radius:6px;font-weight:700;transition:filter .2s}
+a.auth-link:hover{filter:brightness(1.1)}
+a.auth-link.login{background:#999;margin-top:8px}
 </style>
 </head>
 <body>
-<header><h1>MAISON DELCOURT · ChocoBot</h1><span>Conseiller IA • Chocolatier artisanal · Lille</span><div style="margin-left:auto;display:flex;gap:12px;align-items:center"><span id="user_status" style="font-size:0.9rem;color:#d9bf8c"></span><button id="profile_btn" class="ghost" style="display:none">Mon profil</button><button id="reset" class="ghost">Nouvelle conversation</button></div></header>
+<header><h1>MAISON DELCOURT · ChocoBot</h1><span>Conseiller IA • Chocolatier artisanal · Lille</span><div style="margin-left:auto;display:flex;gap:12px;align-items:center"><span id="user_status" style="font-size:0.9rem;color:#d9bf8c"></span><button id="reset" class="ghost">Nouvelle conversation</button></div></header>
 <div class="info-banner" style="max-width:1000px;margin:20px auto 0;padding:0 16px">
  <span>Vos données personnelles sont protégées • <a onclick="openNoticeModal()">Lire la Notice</a></span>
 </div>
@@ -72,39 +75,15 @@ input[type="email"], input[type="password"], input[type="text"], select{width:10
  </section>
  <aside class="box">
   <h2>S'inscrire</h2>
-  <p style="margin-bottom:16px">Pour des recommandations personnalisées</p>
-  
+  <p style="margin-bottom:6px">Pour des recommandations personnalisées</p>
+  <p style="font-size:0.75rem;color:#999;margin-bottom:12px">(Optionnel - le chat fonctionne sans inscription)</p>
+
   <!-- INSCRIPTION / CONNEXION REQUISE -->
   <div id="auth_section" style="background:#f9f9f9;padding:12px;border-radius:4px;margin-bottom:16px;border-left:3px solid var(--or)">
-   <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button id="tab_signup" class="go" style="flex:1;background:var(--framboise)">S'inscrire</button>
-    <button id="tab_login" class="go" style="flex:1;background:#999">Connexion</button>
-   </div>
-
-   <div id="signup_form" style="display:block">
-    <label style="display:block;font-size:0.75rem;color:#333;font-weight:600;margin-bottom:6px">Email</label>
-    <input id="email" type="email" placeholder="votre@email.com" required style="margin-bottom:10px">
-
-    <label style="display:block;font-size:0.75rem;color:#333;font-weight:600;margin-bottom:6px">Mot de passe</label>
-    <input id="password" type="password" placeholder="••••••••" required>
-    <p style="font-size:0.75rem;color:#666;margin:4px 0 10px">Min. 8 caractères</p>
-
-    <button id="signup" class="go" style="width:100%">S'inscrire</button>
-    <div id="signup_msg" class="msg-result"></div>
-   </div>
-
-   <div id="login_form" style="display:none">
-    <label style="display:block;font-size:0.75rem;color:#333;font-weight:600;margin-bottom:6px">Email</label>
-    <input id="login_email" type="email" placeholder="votre@email.com" required style="margin-bottom:10px">
-
-    <label style="display:block;font-size:0.75rem;color:#333;font-weight:600;margin-bottom:6px">Mot de passe</label>
-    <input id="login_password" type="password" placeholder="••••••••" required>
-
-    <button id="login" class="go" style="width:100%;margin-top:10px">Connexion</button>
-    <div id="login_msg" class="msg-result"></div>
-   </div>
+   <a href="/static/signup.html" class="auth-link">S'inscrire</a>
+   <a href="/static/login.html" class="auth-link login">Connexion</a>
   </div>
-  
+
   <!-- PRÉFÉRENCES OPTIONNELLES (visible seulement après inscription) -->
   <div id="prefs_section" style="display:none">
    <p style="font-size:0.8rem;color:#666;margin:16px 0 10px;border-top:1px solid var(--ligne);padding-top:12px">Préférences (optionnel)</p>
@@ -139,11 +118,17 @@ input[type="email"], input[type="password"], input[type="text"], select{width:10
    <button id="save" class="go" style="width:100%;margin-bottom:12px">Enregistrer mes préférences</button>
    <div id="saved" class="msg-result"></div>
 
-   <div style="border-top:1px solid var(--ligne);padding-top:12px;margin-top:12px;display:flex;gap:8px">
-    <button id="withdraw" class="go" style="flex:1;background:#b8893b">Supprimer allergies & enfants</button>
-    <button id="delete" class="go" style="flex:1;background:#a3243b">Supprimer tout le compte</button>
+   <div style="border-top:1px solid var(--ligne);padding-top:12px;margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="withdraw" class="go" style="flex:1;background:#b8893b;min-width:140px">Supprimer allergies & enfants</button>
+    <button id="delete" class="go" style="flex:1;background:#a3243b;min-width:140px">Supprimer tout le compte</button>
    </div>
    <div id="deleted" class="msg-result" style="margin-top:6px"></div>
+
+   <div style="border-top:1px solid var(--ligne);padding-top:12px;margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="export" class="go" style="flex:1;background:#666;min-width:140px;font-size:0.85rem">Exporter mes données</button>
+    <button id="complaint" class="go" style="flex:1;background:#666;min-width:120px;font-size:0.85rem">Réclamation</button>
+   </div>
+   <div id="action_msg" class="msg-result" style="margin-top:6px"></div>
   </div>
  </aside>
 </main>
@@ -158,27 +143,11 @@ let busy = false;
 // RESTAURER ÉTAT D'INSCRIPTION APRÈS REFRESH
 function restoreAuthState(){
   const savedEmail = localStorage.user_email;
-  const savedMode = localStorage.auth_mode; // "signup" ou "login"
 
   if (savedEmail) {
-    // Utilisateur était inscrit - restaurer l'état
-    if (savedMode === "signup") {
-      el("email").value = savedEmail;
-      el("email").disabled = true;
-      el("password").disabled = true;
-      el("signup").disabled = true;
-    } else {
-      el("login_email").value = savedEmail;
-      el("login_email").disabled = true;
-      el("login_password").disabled = true;
-      el("login").disabled = true;
-    }
     el("prefs_section").style.display = "block";
-    el("user_status").textContent = (savedMode === "signup" ? "Inscrit" : "Connecté") + " en tant que " + savedEmail;
-    el("profile_btn").style.display = "inline-block";
-    el("tab_signup").style.display = "none";
-    el("tab_login").style.display = "none";
-    el("auth_section").style.display = "block";
+    el("user_status").textContent = "Connecté en tant que " + savedEmail;
+    el("auth_section").style.display = "none";
   }
 }
 restoreAuthState();
@@ -226,7 +195,7 @@ el("save").onclick = () => {
   el("saved").textContent = "Enregistré";
 };
 
-["email", "password", "allergies", "kids"].forEach(id => el(id).addEventListener("input", () => el("saved").textContent = ""));
+["allergies", "kids"].forEach(id => el(id).addEventListener("input", () => el("saved").textContent = ""));
 consentIds.forEach(id => el(id).addEventListener("change", () => {
   el("saved").textContent = "";
   el("allergies_field").style.display = el("consent_allergies").checked ? "block" : "none";
@@ -238,24 +207,29 @@ el("delete").onclick = () => {
   if (!confirm("Supprimer votre compte entièrement?\n\nCeci supprimera:\n- Votre email et mot de passe\n- Vos allergies\n- Vos préférences enfants\n- TOUT sera irréversible")) return;
   el("deleted").style.color = "#3d7a3d";
   el("deleted").textContent = "Compte supprimé";
-  el("email").value = el("password").value = "";
   el("allergies").value = "";
   el("kids").value = "";
   consentIds.forEach(id => el(id).checked = false);
   el("prefs_section").style.display = "none";
-  el("email").disabled = false;
-  el("password").disabled = false;
-  el("signup").disabled = false;
   el("user_status").textContent = "";
   el("profile_btn").style.display = "none";
   el("auth_section").style.display = "block";
-  el("tab_signup").style.display = "block";
-  el("tab_login").style.display = "block";
-  el("tab_signup").onclick();
+  el("allergies_field").style.display = "none";
+  el("kids_field").style.display = "none";
   clearAuth();
 };
 
 el("reset").onclick = () => {
+  clearAuth();
+  el("user_status").textContent = "";
+  el("auth_section").style.display = "block";
+  el("prefs_section").style.display = "none";
+  el("consent_allergies").checked = false;
+  el("consent_kids").checked = false;
+  el("allergies").value = "";
+  el("kids").value = "";
+  el("allergies_field").style.display = "none";
+  el("kids_field").style.display = "none";
   sid = localStorage.sid = crypto.randomUUID();
   log.innerHTML = "";
   welcome();
@@ -269,62 +243,9 @@ function closeNoticeModal(){
 }
 function clearAuth(){
   delete localStorage.user_email;
-  delete localStorage.auth_mode;
 }
 document.querySelector(".modal-close").onclick = closeNoticeModal;
 el("noticeModal").onclick = (e) => { if(e.target === el("noticeModal")) closeNoticeModal(); };
-
-// TABS SIGNUP / LOGIN
-function switchTab(tab) {
-  el("signup_form").style.display = tab === "signup" ? "block" : "none";
-  el("login_form").style.display = tab === "login" ? "block" : "none";
-  el("tab_signup").style.background = tab === "signup" ? "var(--framboise)" : "#999";
-  el("tab_login").style.background = tab === "login" ? "var(--framboise)" : "#999";
-}
-el("tab_signup").onclick = () => switchTab("signup");
-el("tab_login").onclick = () => switchTab("login");
-
-// AUTHENTIFICATION (signup/login fusionnés)
-function authenticate(type) {
-  const emailId = type === "signup" ? "email" : "login_email";
-  const passwordId = type === "signup" ? "password" : "login_password";
-  const msgId = type === "signup" ? "signup_msg" : "login_msg";
-  const email = el(emailId).value;
-  const password = el(passwordId).value;
-
-  if (!email || !password) {
-    el(msgId).style.color = "#a3243b";
-    el(msgId).textContent = "Email et mot de passe requis";
-    return;
-  }
-
-  localStorage.user_email = email;
-  localStorage.auth_mode = type;
-  el(msgId).style.color = "#3d7a3d";
-  el(msgId).textContent = type === "signup" ? "Inscrit !" : "Connecté !";
-  el("auth_section").style.display = "none";
-  el("prefs_section").style.display = "block";
-  el(emailId).disabled = true;
-  el(passwordId).disabled = true;
-  el(type === "signup" ? "signup" : "login").disabled = true;
-  el("tab_signup").style.display = "none";
-  el("tab_login").style.display = "none";
-  el("user_status").textContent = (type === "signup" ? "Inscrit" : "Connecté") + " en tant que " + email;
-  el("profile_btn").style.display = "inline-block";
-}
-
-el("signup").onclick = () => authenticate("signup");
-el("login").onclick = () => authenticate("login");
-
-// INFO POPUP ALLERGIES
-function openAllergiesInfo(){
-  alert("ENREGISTRER VOS ALLERGIES\n\nPour que nos recommandations soient adaptées à votre sécurité alimentaire.\n\nExemples:\n- Fruits à coque (noisettes, amandes, cacahuètes)\n- Gluten\n- Produits laitiers\n- Œufs\n\nSÉCURITÉ:\n- Données chiffrées en AES-256\n- Conservées 1 an après inactivité\n- Accès, modification, suppression possibles\n- Vous pouvez retirer ce consentement à tout moment\n\nVos droits RGPD:\n- Droit d'accès à vos données\n- Droit de rectification\n- Droit à l'oubli (suppression)\n- Droit d'opposition");
-}
-
-// BOUTON PROFIL
-el("profile_btn").onclick = () => {
-  alert("Page /profile - À IMPLÉMENTER\n\nAccès à:\n- Vos données personnelles\n- Modification des préférences\n- Gestion des consentements\n- Export de données\n- Droit à l'oubli");
-};
 
 // SUPPRIMER ALLERGIES & ENFANTS
 el("withdraw").onclick = () => {
@@ -339,28 +260,30 @@ el("withdraw").onclick = () => {
   el("deleted").textContent = "Allergies & enfants supprimés";
 };
 
-// DÉCONNEXION (reset)
-const originalReset = el("reset").onclick;
-el("reset").onclick = () => {
-  clearAuth();
-  el("user_status").textContent = "";
-  el("profile_btn").style.display = "none";
-  el("auth_section").style.display = "block";
-  el("prefs_section").style.display = "none";
-  el("email").value = el("password").value = "";
-  el("login_email").value = el("login_password").value = "";
-  el("email").disabled = false;
-  el("password").disabled = false;
-  el("login_email").disabled = false;
-  el("login_password").disabled = false;
-  el("signup").disabled = false;
-  el("login").disabled = false;
-  el("signup_msg").textContent = "";
-  el("login_msg").textContent = "";
-  el("tab_signup").style.display = "block";
-  el("tab_login").style.display = "block";
-  switchTab("signup");
-  originalReset();
+// EXPORTER DONNÉES
+el("export").onclick = () => {
+  const email = localStorage.user_email;
+  const data = {
+    email: email,
+    allergies: el("allergies").value,
+    enfants: el("kids").value,
+    exported_at: new Date().toLocaleString("fr-FR")
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `chocobot-data-${email}.json`;
+  a.click();
+  el("action_msg").style.color = "#3d7a3d";
+  el("action_msg").textContent = "Données exportées";
+};
+
+// RÉCLAMATION
+el("complaint").onclick = () => {
+  const email = localStorage.user_email;
+  alert(`Réclamation pour ${email}\n\nContactez-nous: contact@maisondelcourt.fr\nObjet: Réclamation IA Act`);
 };
 
 welcome();
@@ -371,29 +294,77 @@ welcome();
   <button class="modal-close">✕</button>
   <h2>Notice d'Information</h2>
   <p><strong>Article 13 RGPD</strong></p>
-  
+
   <h3>Responsable</h3>
   <p>Maison Delcourt, Chocolatier artisanal · Lille<br>contact@maisondelcourt.fr</p>
-  
+
   <h3>Données collectées</h3>
   <ul><li>Email et mot de passe (inscription)</li><li>Allergies (optionnel)</li><li>Âge des enfants (optionnel)</li><li>Logs techniques</li></ul>
-  
+
   <h3>Finalités</h3>
   <ul><li>Recommandations de coffrets</li><li>Amélioration du service</li><li>Sécurité</li></ul>
-  
+
   <h3>Bases légales</h3>
   <ul><li>Inscription: Consentement</li><li>Allergies: Consentement explicite</li><li>Logs: Intérêt légitime</li></ul>
-  
+
   <h3>Conservation</h3>
   <ul><li>Conversations: 24h</li><li>Profil: 3 ans après inactivité</li><li>Allergies: 1 an après inactivité</li><li>Logs: 12 mois</li></ul>
-  
+
   <h3>Vos droits</h3>
   <ul><li>Accès à vos données</li><li>Rectification</li><li>Suppression (moins de 30 jours)</li><li>Opposition</li><li>Retrait de consentement</li></ul>
-  
+
   <p style="margin-top:16px;padding-top:16px;border-top:1px solid #e4d5bb;font-size:.85rem">En utilisant ce service, vous acceptez le traitement selon ces conditions.</p>
-  
+
   <button onclick="closeNoticeModal()" style="width:100%;padding:10px;margin-top:12px;background:var(--or);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:700;font:inherit">Fermer</button>
  </div>
 </div>
+
+<!-- INFO ALLERGIES -->
+<div id="allergiesInfoModal" class="modal">
+ <div class="modal-content">
+  <button class="modal-close" onclick="closeAllergiesInfo()">✕</button>
+  <h2>Enregistrer vos allergies</h2>
+  <p>Pour que nos recommandations soient adaptées à votre sécurité alimentaire.</p>
+
+  <h3>Exemples courants</h3>
+  <ul>
+   <li>Fruits à coque (noisettes, amandes, cacahuètes)</li>
+   <li>Gluten</li>
+   <li>Produits laitiers</li>
+   <li>Œufs</li>
+  </ul>
+
+  <h3>Sécurité</h3>
+  <ul>
+   <li>Données chiffrées en AES-256</li>
+   <li>Conservées 1 an après inactivité</li>
+   <li>Accès, modification, suppression possibles</li>
+   <li>Retrait du consentement à tout moment</li>
+  </ul>
+
+  <p style="margin-top:16px;padding-top:16px;border-top:1px solid #e4d5bb;font-size:.85rem"><strong>Vos droits RGPD:</strong> accès, rectification, oubli, opposition, retrait du consentement.</p>
+
+  <button onclick="closeAllergiesInfo()" style="width:100%;padding:10px;margin-top:12px;background:var(--or);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:700;font:inherit">Fermer</button>
+ </div>
+</div>
+
+<script>
+function openAllergiesInfo(){
+  document.getElementById("allergiesInfoModal").classList.add("active");
+}
+function closeAllergiesInfo(){
+  document.getElementById("allergiesInfoModal").classList.remove("active");
+}
+document.querySelectorAll(".modal-close").forEach(btn => {
+  btn.onclick = (e) => {
+    e.target.closest(".modal").classList.remove("active");
+  };
+});
+document.querySelectorAll(".modal").forEach(modal => {
+  modal.onclick = (e) => {
+    if(e.target === modal) modal.classList.remove("active");
+  };
+});
+</script>
 </body>
 </html>
