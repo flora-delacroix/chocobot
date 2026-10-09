@@ -31,31 +31,41 @@ class ChatIn(BaseModel):
     message: str
 
 
-class ProfileIn(BaseModel):
-    session_id: str
-    name: str = ""
-    email: str = ""
-    allergies: str = ""
-    children_ages: str = ""
+class SignupIn(BaseModel):
+    email: str
+    mot_de_passe: str
 
 
 @app.get("/")
 def home():
-    return FileResponse("static/index.html")
+    response = FileResponse("static/index.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
-@app.post("/profile")
-def profile(body: ProfileIn):
-    db.save_customer(body.session_id, body.name, body.email, body.allergies, body.children_ages)
-    return {"status": "saved"}
+@app.post("/signup")
+def signup(body: SignupIn):
+    db.save_user(body.email, body.mot_de_passe)
+    return {"status": "signup_ok"}
+
+
+@app.post("/login")
+def login(body: SignupIn):
+    user = db.get_user(body.email)
+    if not user:
+        return {"status": "error", "message": "user_not_found"}, 401
+    if not db.verify_password(body.mot_de_passe, user["mot_de_passe_hash"]):
+        return {"status": "error", "message": "wrong_password"}, 401
+    return {"status": "login_ok"}
 
 
 @app.post("/chat")
 def chat(body: ChatIn):
-    return handle_chat(body.session_id, body.message)
+    return handle_chat(None, body.message)  # Chat anonyme (pas d'email)
 
 
-# Back-office de l'équipe Delcourt : pratique pour voir qui a écrit quoi
 @app.get("/admin")
 def admin():
     return FileResponse("static/admin.html")
@@ -63,9 +73,10 @@ def admin():
 
 @app.get("/admin/data")
 def admin_data():
-    data = db.get_all()
-    data["llm"] = {"big": llm.BIG_MODEL, "small": llm.SMALL_MODEL}
-    return data
+    return {
+        "stats": db.get_stats(),
+        "llm": {"big": llm.BIG_MODEL, "small": llm.SMALL_MODEL}
+    }
 
 
 @app.get("/health")
@@ -81,12 +92,11 @@ def health():
         "llm": llm_status
     }
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logging.warning(f"Donnée corrompue/invalide reçue sur {request.url.path} : {exc.errors()}")
-    
     sentry_sdk.capture_message(f"Corrupted Payload on {request.url.path}: {exc.errors()}", level="warning")
-    
     return JSONResponse(
         status_code=400,
         content={"status": "error", "message": "Les données envoyées sont invalides ou corrompues."}

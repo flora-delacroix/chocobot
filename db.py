@@ -1,40 +1,57 @@
 import sqlite3, time
+import bcrypt
 
 conn = sqlite3.connect("chocobot.db", check_same_thread=False)
-conn.execute("""CREATE TABLE IF NOT EXISTS customers (
-    session_id TEXT PRIMARY KEY, name TEXT, email TEXT, allergies TEXT, children_ages TEXT, created_at REAL)""")
-conn.execute("""CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT, created_at REAL)""")
+
+conn.execute("""CREATE TABLE IF NOT EXISTS users (
+    email TEXT PRIMARY KEY,
+    mot_de_passe_hash TEXT NOT NULL,
+    allergies_encrypted TEXT,
+    tranche_age TEXT,
+    created_at REAL
+)""")
+
+conn.execute("""CREATE TABLE IF NOT EXISTS counters (
+    category TEXT PRIMARY KEY,
+    count INTEGER DEFAULT 0
+)""")
+
 conn.commit()
 
+def hash_password(password):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def save_customer(session_id, name, email, allergies, children_ages):
-    conn.execute("INSERT OR REPLACE INTO customers VALUES (?,?,?,?,?,?)",
-                 (session_id, name, email, allergies, children_ages, time.time()))
+def verify_password(password, hash_stored):
+    return bcrypt.checkpw(password.encode(), hash_stored.encode())
+
+def save_user(email, mot_de_passe, allergies_encrypted=None, tranche_age=None):
+    mot_de_passe_hash = hash_password(mot_de_passe)
+    conn.execute("""INSERT OR REPLACE INTO users (email, mot_de_passe_hash, allergies_encrypted, tranche_age, created_at)
+                    VALUES (?,?,?,?,?)""",
+                 (email, mot_de_passe_hash, allergies_encrypted, tranche_age, time.time()))
     conn.commit()
 
+def get_user(email):
+    row = conn.execute("SELECT mot_de_passe_hash, allergies_encrypted, tranche_age, created_at FROM users WHERE email=?",
+                      (email,)).fetchone()
+    return dict(zip(["mot_de_passe_hash", "allergies_encrypted", "tranche_age", "created_at"], row)) if row else None
 
-def get_customer(session_id):
-    row = conn.execute("SELECT name, email, allergies, children_ages FROM customers WHERE session_id=?",
-                       (session_id,)).fetchone()
-    return dict(zip(["name", "email", "allergies", "children_ages"], row)) if row else {}
-
-
-def save_message(session_id, role, content):
-    conn.execute("INSERT INTO messages (session_id, role, content, created_at) VALUES (?,?,?,?)",
-                 (session_id, role, content, time.time()))
+def delete_user(email):
+    conn.execute("DELETE FROM users WHERE email=?", (email,))
     conn.commit()
 
+def increment_counter(category):
+    current = conn.execute("SELECT count FROM counters WHERE category=?", (category,)).fetchone()
+    if current:
+        conn.execute("UPDATE counters SET count = count + 1 WHERE category=?", (category,))
+    else:
+        conn.execute("INSERT INTO counters (category, count) VALUES (?,?)", (category, 1))
+    conn.commit()
 
-def get_history(session_id):
-    rows = conn.execute("SELECT role, content FROM messages WHERE session_id=? ORDER BY id", (session_id,)).fetchall()
-    return [{"role": r, "content": c} for r, c in rows]
+def get_stats():
+    rows = conn.execute("SELECT category, count FROM counters ORDER BY count DESC").fetchall()
+    return [dict(zip(["category", "count"], r)) for r in rows]
 
-
-def get_all():
-    cust = conn.execute("SELECT session_id, name, email, allergies, children_ages, created_at FROM customers ORDER BY created_at DESC").fetchall()
-    msgs = conn.execute("SELECT id, session_id, role, content, created_at FROM messages ORDER BY id DESC LIMIT 200").fetchall()
-    return {
-        "customers": [dict(zip(["session_id", "name", "email", "allergies", "children_ages", "created_at"], r)) for r in cust],
-        "messages": [dict(zip(["id", "session_id", "role", "content", "created_at"], r)) for r in msgs],
-    }
+def get_counter(category):
+    row = conn.execute("SELECT count FROM counters WHERE category=?", (category,)).fetchone()
+    return row[0] if row else 0
