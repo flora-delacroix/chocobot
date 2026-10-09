@@ -174,9 +174,13 @@ async function send(text){
   const wait = add("", "bot");
   wait.lastChild.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>';
   try {
-    wait.lastChild.textContent = (await post("/chat", {session_id: sid, message: text})).reply;
+    const res = await post("/chat", {session_id: sid, message: text});
+    wait.lastChild.textContent = res.reply;
+    el("msg").value = "";  // Vider que si succès
   } catch (e) {
-    wait.lastChild.textContent = "Erreur. Désolé.";
+    wait.lastChild.textContent = "❌ Erreur: " + (e.message || "Serveur indisponible");
+    console.error(e);
+    // Laisser le texte dans le champ pour réessayer
   }
   busy = false; el("go").disabled = false; el("msg").focus();
   log.scrollTop = log.scrollHeight;
@@ -184,7 +188,12 @@ async function send(text){
 el("send").onsubmit = e => {
   e.preventDefault();
   const i = el("msg");
-  if (i.value.trim()) { send(i.value.trim()); i.value = ""; }
+  if (i.value.trim()) {
+    const txt = i.value.trim();
+    send(txt);
+    // Ne vider que si pas d'erreur (on laisse le texte si erreur pour réessayer)
+    setTimeout(() => { if (!busy) i.value = ""; }, 500);
+  }
 };
 document.querySelectorAll(".chip").forEach(c => c.onclick = () => send(c.textContent));
 
@@ -244,8 +253,6 @@ function closeNoticeModal(){
 function clearAuth(){
   delete localStorage.user_email;
 }
-document.querySelector(".modal-close").onclick = closeNoticeModal;
-el("noticeModal").onclick = (e) => { if(e.target === el("noticeModal")) closeNoticeModal(); };
 
 // SUPPRIMER ALLERGIES & ENFANTS
 el("withdraw").onclick = () => {
