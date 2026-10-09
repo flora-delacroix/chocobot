@@ -174,7 +174,8 @@ async function send(text){
   const wait = add("", "bot");
   wait.lastChild.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>';
   try {
-    const res = await post("/chat", {session_id: sid, message: text});
+    const email = localStorage.user_email || null;
+    const res = await post("/chat", {email, message: text});
     wait.lastChild.textContent = res.reply;
     el("msg").value = "";  // Vider que si succès
   } catch (e) {
@@ -199,9 +200,27 @@ document.querySelectorAll(".chip").forEach(c => c.onclick = () => send(c.textCon
 
 
 // ENREGISTRER PRÉFÉRENCES
-el("save").onclick = () => {
-  el("saved").style.color = "#3d7a3d";
-  el("saved").textContent = "Enregistré";
+el("save").onclick = async () => {
+  const email = localStorage.user_email;
+  if (!email) {
+    el("saved").style.color = "#a3243b";
+    el("saved").textContent = "Erreur: pas connecté";
+    return;
+  }
+
+  const allergies = el("allergies").value || null;
+  const tranche_age = el("kids").value || null;
+
+  try {
+    const res = await post("/update-preferences", {email, allergies_encrypted: allergies, tranche_age});
+    if (res.status === "preferences_updated") {
+      el("saved").style.color = "#3d7a3d";
+      el("saved").textContent = "Enregistré";
+    }
+  } catch (e) {
+    el("saved").style.color = "#a3243b";
+    el("saved").textContent = "Erreur: " + (e.message || "Sauvegarde échouée");
+  }
 };
 
 ["allergies", "kids"].forEach(id => el(id).addEventListener("input", () => el("saved").textContent = ""));
@@ -212,20 +231,32 @@ consentIds.forEach(id => el(id).addEventListener("change", () => {
 }));
 
 // SUPPRIMER COMPTE COMPLET
-el("delete").onclick = () => {
+el("delete").onclick = async () => {
   if (!confirm("Supprimer votre compte entièrement?\n\nCeci supprimera:\n- Votre email et mot de passe\n- Vos allergies\n- Vos préférences enfants\n- TOUT sera irréversible")) return;
-  el("deleted").style.color = "#3d7a3d";
-  el("deleted").textContent = "Compte supprimé";
-  el("allergies").value = "";
-  el("kids").value = "";
-  consentIds.forEach(id => el(id).checked = false);
-  el("prefs_section").style.display = "none";
-  el("user_status").textContent = "";
-  el("profile_btn").style.display = "none";
-  el("auth_section").style.display = "block";
-  el("allergies_field").style.display = "none";
-  el("kids_field").style.display = "none";
-  clearAuth();
+
+  const password = prompt("Entrez votre mot de passe pour confirmer la suppression:");
+  if (!password) return;
+
+  const email = localStorage.user_email;
+  try {
+    const res = await post("/delete", {email, mot_de_passe: password});
+    if (res.status === "account_deleted") {
+      el("deleted").style.color = "#3d7a3d";
+      el("deleted").textContent = "Compte supprimé";
+      el("allergies").value = "";
+      el("kids").value = "";
+      consentIds.forEach(id => el(id).checked = false);
+      el("prefs_section").style.display = "none";
+      el("user_status").textContent = "";
+      el("auth_section").style.display = "block";
+      el("allergies_field").style.display = "none";
+      el("kids_field").style.display = "none";
+      clearAuth();
+    }
+  } catch (e) {
+    el("deleted").style.color = "#a3243b";
+    el("deleted").textContent = "❌ Erreur: " + (e.message || "Suppression échouée");
+  }
 };
 
 el("reset").onclick = () => {
@@ -255,16 +286,29 @@ function clearAuth(){
 }
 
 // SUPPRIMER ALLERGIES & ENFANTS
-el("withdraw").onclick = () => {
+el("withdraw").onclick = async () => {
   if (!confirm("Supprimer vos allergies et données enfants?\n\nCes données seront supprimées immédiatement.\nVotre compte email restera actif.")) return;
-  el("consent_allergies").checked = false;
-  el("consent_kids").checked = false;
-  el("allergies").value = "";
-  el("kids").value = "";
-  el("allergies_field").style.display = "none";
-  el("kids_field").style.display = "none";
-  el("deleted").style.color = "#3d7a3d";
-  el("deleted").textContent = "Allergies & enfants supprimés";
+
+  const password = prompt("Entrez votre mot de passe pour confirmer:");
+  if (!password) return;
+
+  const email = localStorage.user_email;
+  try {
+    const res = await post("/delete-allergies", {email, mot_de_passe: password});
+    if (res.status === "allergies_deleted") {
+      el("consent_allergies").checked = false;
+      el("consent_kids").checked = false;
+      el("allergies").value = "";
+      el("kids").value = "";
+      el("allergies_field").style.display = "none";
+      el("kids_field").style.display = "none";
+      el("deleted").style.color = "#3d7a3d";
+      el("deleted").textContent = "Allergies & enfants supprimés";
+    }
+  } catch (e) {
+    el("deleted").style.color = "#a3243b";
+    el("deleted").textContent = "❌ Erreur: " + (e.message || "Suppression échouée");
+  }
 };
 
 // EXPORTER DONNÉES
