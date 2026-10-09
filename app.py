@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 from chatbot import handle_chat
 import db, llm
 import logging, sentry_sdk
@@ -27,13 +28,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class ChatIn(BaseModel):
-    session_id: str
+    email: Optional[str] = None
     message: str
 
 
 class SignupIn(BaseModel):
     email: str
     mot_de_passe: str
+
+
+class PreferencesIn(BaseModel):
+    email: str
+    allergies_encrypted: Optional[str] = None
+    tranche_age: Optional[str] = None
 
 
 @app.get("/")
@@ -53,17 +60,63 @@ def signup(body: SignupIn):
 
 @app.post("/login")
 def login(body: SignupIn):
+    # Suppression automatique des comptes inactifs depuis 1 an
+    db.delete_inactive_users(days=365)
+
     user = db.get_user(body.email)
     if not user:
-        return {"status": "error", "message": "user_not_found"}, 401
+        return JSONResponse(status_code=401, content={"status": "error", "message": "user_not_found"})
     if not db.verify_password(body.mot_de_passe, user["mot_de_passe_hash"]):
-        return {"status": "error", "message": "wrong_password"}, 401
+        return JSONResponse(status_code=401, content={"status": "error", "message": "wrong_password"})
+
+    # Mise à jour de la dernière activité
+    db.update_activity(body.email)
     return {"status": "login_ok"}
 
 
 @app.post("/chat")
 def chat(body: ChatIn):
-    return handle_chat(None, body.message)  # Chat anonyme (pas d'email)
+    # Mettre à jour l'activité si connecté
+    if body.email:
+        db.update_activity(body.email)
+    return handle_chat(body.email, body.message)
+
+
+@app.post("/update-preferences")
+def update_preferences(body: PreferencesIn):
+    """Met à jour les allergies et tranche d'âge."""
+    user = db.get_user(body.email)
+    if not user:
+        return JSONResponse(status_code=401, content={"status": "error", "message": "user_not_found"})
+
+    db.update_preferences(body.email, body.allergies_encrypted, body.tranche_age)
+    return {"status": "preferences_updated"}
+
+
+@app.post("/delete-allergies")
+def delete_allergies(body: SignupIn):
+    """Supprime juste les allergies et la tranche d'âge."""
+    user = db.get_user(body.email)
+    if not user:
+        return JSONResponse(status_code=401, content={"status": "error", "message": "user_not_found"})
+    if not db.verify_password(body.mot_de_passe, user["mot_de_passe_hash"]):
+        return JSONResponse(status_code=401, content={"status": "error", "message": "wrong_password"})
+
+    db.clear_allergies(body.email)
+    return {"status": "allergies_deleted"}
+
+
+@app.post("/delete")
+def delete_account(body: SignupIn):
+    """Supprime complètement le compte utilisateur."""
+    user = db.get_user(body.email)
+    if not user:
+        return JSONResponse(status_code=401, content={"status": "error", "message": "user_not_found"})
+    if not db.verify_password(body.mot_de_passe, user["mot_de_passe_hash"]):
+        return JSONResponse(status_code=401, content={"status": "error", "message": "wrong_password"})
+
+    db.delete_user(body.email)
+    return {"status": "account_deleted"}
 
 
 @app.get("/admin")
